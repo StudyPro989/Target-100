@@ -45,6 +45,8 @@ fun MainScreen(viewModel: Target100ViewModel) {
         }
     }
 
+    val totalXp by viewModel.totalXp.collectAsState()
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -53,9 +55,16 @@ fun MainScreen(viewModel: Target100ViewModel) {
                 currentLang = currentLang,
                 verifiedCount = verifiedCount,
                 totalChapters = totalChapters,
+                streakDays = streakDays,
+                totalXp = totalXp,
+                examDaysRemaining = examDaysRemaining,
                 onDestinationClick = { dest ->
                     viewModel.navigateTo(dest)
                     scope.launch { drawerState.close() }
+                },
+                onLangToggle = {
+                    val next = if (currentLang == "hi") "en" else "hi"
+                    viewModel.setLanguage(next)
                 }
             )
         }

@@ -37,6 +37,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
@@ -85,6 +86,8 @@ fun TargetsScreen(
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var promptVerificationTarget by remember { mutableStateOf<TargetEntity?>(null) }
+    var alreadyCompletedTargetNotice by remember { mutableStateOf<TargetEntity?>(null) }
+    var feedbackMessage by remember { mutableStateOf<String?>(null) }
 
     val todayStr = viewModel.repository.getTodayDateString()
 
@@ -111,6 +114,41 @@ fun TargetsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Feedback notification banner
+            feedbackMessage?.let { msg ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFB91C1C),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { feedbackMessage = null }, modifier = Modifier.size(24.dp)) {
+                            Text("✕", color = Color(0xFFB91C1C), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
             // Tabs
             ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
@@ -200,7 +238,9 @@ fun TargetsScreen(
                             chapterName = chapName,
                             currentLang = currentLang,
                             onComplete = {
-                                if (target.status != TargetStatus.COMPLETED.name) {
+                                if (target.status == TargetStatus.COMPLETED.name) {
+                                    alreadyCompletedTargetNotice = target
+                                } else {
                                     promptVerificationTarget = target
                                 }
                             },
@@ -223,11 +263,49 @@ fun TargetsScreen(
             currentLang = currentLang,
             onTakeTest = { targetToTest ->
                 promptVerificationTarget = null
+                feedbackMessage = null
                 viewModel.startTestForTarget(targetToTest)
             },
             onDecline = {
                 // Denied: task remains incomplete until tested
                 promptVerificationTarget = null
+                feedbackMessage = "Verification test declined: Task '${tgt.title}' remains INCOMPLETE until tested."
+            }
+        )
+    }
+
+    if (alreadyCompletedTargetNotice != null) {
+        val tgt = alreadyCompletedTargetNotice!!
+        AlertDialog(
+            onDismissRequest = { alreadyCompletedTargetNotice = null },
+            title = {
+                Text(
+                    text = "Target Already Verified",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "This target '${tgt.title}' was already completed by passing its verification test with >=75%! Would you like to retake a test to practice again?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(onClick = { alreadyCompletedTargetNotice = null }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        val toTest = alreadyCompletedTargetNotice!!
+                        alreadyCompletedTargetNotice = null
+                        viewModel.startTestForTarget(toTest)
+                    }
+                ) {
+                    Text("Retake Test")
+                }
             }
         )
     }

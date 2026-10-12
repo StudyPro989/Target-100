@@ -2,7 +2,7 @@ package com.example.ui.i18n
 
 object AppStrings {
 
-    fun get(key: String, lang: String = "hi"): String {
+    fun get(key: String, lang: String = "en"): String {
         val map = if (lang == "hi") hindiStrings else englishStrings
         return map[key] ?: englishStrings[key] ?: key
     }
