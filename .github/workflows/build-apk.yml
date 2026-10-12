@@ -25,6 +25,20 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+          api-level: 36
+          build-tools: 36.0.0
+          components: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
+            cmdline-tools;latest
+
+      - name: Debug SDK repository
+        run: |
+          echo "SDK path: $ANDROID_SDK_ROOT"
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list --verbose || true
 
       - name: Prepare Secrets Configuration
         run: |
